@@ -117,5 +117,6 @@ def main():
 if __name__ == '__main__':
     logging.basicConfig(level=LOGGING_LEVEL)
     main()
-    # we should never get here
-    sys.exit(20)
+
+    # we should never get here because main() loops indefinitely
+    assert False, "executing unreachable code"
