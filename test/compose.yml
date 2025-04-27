@@ -1,0 +1,7 @@
+  
+services:
+  test:
+    build: .
+
+    labels:
+      - traefik.http.routers.test.rule=Host (`test.local`)

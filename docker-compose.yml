@@ -1,0 +1,36 @@
+services:
+  avahi-local-hosts:
+    image: lightning:5000/wschi/traefik-avahi-helper:latest
+    build: .
+#    read_only: true
+    depends_on:
+      - test1
+      - test2
+    privileged: true
+#    security_opt:
+#      - apparmor=traefik-avahi-helper
+#    network_mode: "host"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket
+
+  test1:
+    build: test
+    environment:
+      - DUR=15
+    labels:
+      - traefik.http.routers.test1.rule=Host (`test1.local`)
+
+  test2:
+    build: test
+    environment:
+      - DUR=60
+    labels:
+      - traefik.http.routers.test2.rule=Host (`test2.local`)
+
+  test3:
+    build: test
+    environment:
+      - DUR=60
+    labels:
+      - traefik.http.routers.test3.rule=Host (`test2.local`)
