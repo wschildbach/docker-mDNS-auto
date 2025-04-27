@@ -3,119 +3,116 @@ import re
 import sys
 import signal
 import logging
-logger = logging.getLogger(__name__)
 
 PUBLISH_TTL = 120
-RENEW_TTL = PUBLISH_TTL-10
-USE_AVAHI = True
+USE_AVAHI     = True
 LOGGING_LEVEL=logging.DEBUG
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=LOGGING_LEVEL)
 
 if USE_AVAHI:
     from mpublisher import AvahiPublisher
 
-"""set up AvahiPublisher and docker connection"""
-try:
-    dockerclient = docker.from_env()
-    if USE_AVAHI:
-        avahi = AvahiPublisher(record_ttl=PUBLISH_TTL)
-except Exception as e:
-    logging.error("%s",e)
-    sys.exit(20)
+class LocalHostWatcher(object):
+    """watch the docker socket for starting and dieing containers.
+    Publish and unpublish mDNS records to Avahi, using D-BUS."""
 
-# list of active host entries
-activeHostentry = {}
+    """Set up compiler regexes to find relevant labels / containers"""
+    # TODO check for upper/lower case
+    hostrule = re.compile(r'traefik\.http\.routers\.(.*)\.rule')
+    localrule = re.compile(r'Host\s*\(\s*`(.*\.local)`\s*\)')
+    hostnamerule = re.compile(r'^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$')
 
-def publish(cname):
-    logger.debug("calling publish %s",cname)
-    # schedule a timer to re-register the cnames even when the TTL has passed
-    signal.alarm(RENEW_TTL)
-    if USE_AVAHI:
-        avahi.publish_cname(cname, True)
+    def __init__(self,dockerclient):
+        """set up AvahiPublisher and docker connection"""
+        logger.debug("_init__ called on LocalHostWatcher")
+        
+        try:
+            self.dockerclient = dockerclient
+            if USE_AVAHI:
+                self.avahi = AvahiPublisher(record_ttl=PUBLISH_TTL)
+        except Exception as e:
+            logger.critical("%s",e)
+            raise(e)
+#            sys.exit(20)
+        logger.debug("dockerclient %s and avahi %s",self.dockerclient,self.avahi)
 
-def unpublish(cname):
-    logger.debug("calling unpublish %s",cname)
-    if len(activeHostentry) == 0:
-        # unregister the alarm when the list is empty
-        signal.alarm(0)
+    def __del__(self):
+        logger.info("deregistering all registered hostnames")
+        del self.avahi # not strictly necessary but safe
 
-    if USE_AVAHI:
-        avahi.unpublish(cname)
+    def publish(self,cname):
+        logger.debug("calling publish %s",cname)
+        if USE_AVAHI:
+            self.avahi.publish_cname(cname, True)
 
-"""Set up compiler regexes to find relevant labels / containers"""
-# TODO check for upper/lower case
-hostrule = re.compile(r'traefik\.http\.routers\.(.*)\.rule')
-localrule = re.compile(r'Host\s*\(\s*`(.*\.local)`\s*\)')
-hostnamerule = re.compile(r'^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$')
+    def unpublish(self,cname):
+        logger.debug("calling unpublish %s",cname)
+        if USE_AVAHI:
+            self.avahi.unpublish(cname)
 
-"""when start/stop events are received, process the container that triggered the event """
-def process_event(event):
-    if event['Type'] == 'container' and event['Action'] in ('start','die'):
-        container_id = event['Actor']['ID']
-        container = dockerclient.containers.get(container_id)
+    """when start/stop events are received, process the container that triggered the event """
+    def process_event(self,event):
+        if event['Type'] == 'container' and event['Action'] in ('start','die'):
+            container_id = event['Actor']['ID']
+            container = self.dockerclient.containers.get(container_id)
 
-        process_container(event['Action'],container)
+            self.process_container(event['Action'],container)
 
-"""when a container triggered start/stop event, and it has a Host label, take appropriate action"""
-def process_container(action,container):
-    hostkeys = filter(lambda l:hostrule.match(l), container.labels.keys())
-    for h in hostkeys:
-        rhs = container.labels[h]
-        cnamematch = localrule.match(rhs)
+    """when a container triggered start/stop event, and it has a Host label, take appropriate action"""
+    def process_container(self,action,container):
+        hostkeys = filter(lambda l:self.hostrule.match(l), container.labels.keys())
+        for h in hostkeys:
+            cnamematch = self.localrule.match(container.labels[h])
 
-        if cnamematch:
-            cname = cnamematch.group(1)
+            if cnamematch:
+                cname = cnamematch.group(1)
 
-            if not hostnamerule.match(cname):
-                logger.error("invalid hostname %s rejected",cname)
-                continue
+                if not self.hostnamerule.match(cname):
+                    logger.error("invalid hostname %s rejected",cname)
+                    continue
 
-            if action == 'start':
-                logger.debug("enrolling %s",cname)
-                activeHostentry[cname] = 1
-                publish(cname)
-            elif action == 'die':
-                logger.debug("de-enrolling %s",cname)
-                del activeHostentry[cname]
-                unpublish(cname)
+                if action == 'start':
+                    self.publish(cname)
+                elif action == 'die':
+                    try:
+                        self.unpublish(cname)
+                    except KeyError:
+                        pass # silently ignore errors upon unpublishing
+
+    def run(self):
+        # Initial scan of running containers and publish hostnames
+        logger.info("registering for already running containers...")
+
+        containers = self.dockerclient.containers.list()
+        for container in containers:
+            self.process_container("start", container)
+
+        # listen for Docker events and process them
+        logger.info("waiting for container start/die...")
+        for event in self.dockerclient.events(decode=True):
+            self.process_event(event)
 
 def exithandler(a,b):
     logger.info("exiting")
-    # delete alarm
-    signal.alarm(0)
+#    avahi = None
+#    del localWatcher
 
-    while len(activeHostentry) > 0:
-        (c,x) = activeHostentry.popitem()
-        unpublish(c)
-
-    # unregister handlers? Not sure how
+    # TODO figure out how and whether to unregister handlers
     sys.exit(0)
-
-def reregister(a,b):
-#    print ("reregister called")
-    for c in activeHostentry.keys():
-        publish(c)
 
 def main():
     # Set the signal handler and a 5-second alarm
     signal.signal(signal.SIGTERM, exithandler)
     signal.signal(signal.SIGINT, exithandler)
     signal.signal(signal.SIGHUP, exithandler)
-    signal.signal(signal.SIGALRM, reregister)
 
-    # Initial scan of running containers and publish hostnames
-    containers = dockerclient.containers.list()
-
-    logger.info("registering for already running containers...")
-    for container in containers:
-        process_container("start", container)
-
-    # Listen for Docker events and process them
-    logger.info("waiting for container start/die...")
-    for event in dockerclient.events(decode=True):
-        process_event(event)
+    dockerclient = docker.from_env()
+    localWatcher = LocalHostWatcher(dockerclient)
+    localWatcher.run() # this will never return
 
 if __name__ == '__main__':
-    logging.basicConfig(level=LOGGING_LEVEL)
     main()
 
     # we should never get here because main() loops indefinitely
