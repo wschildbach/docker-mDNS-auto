@@ -36,8 +36,6 @@ class LocalHostWatcher(object):
         except Exception as e:
             logger.critical("%s",e)
             raise(e)
-#            sys.exit(20)
-        logger.debug("dockerclient %s and avahi %s",self.dockerclient,self.avahi)
 
     def __del__(self):
         logger.info("deregistering all registered hostnames")
