@@ -75,12 +75,15 @@ class LocalHostWatcher(object):
                     continue
 
                 if action == 'start':
-                    self.publish(cname)
+                    try:
+                        self.publish(cname)
+                    except KeyError:
+                        logger.warning("registering previously registered %s",cname)
                 elif action == 'die':
                     try:
                         self.unpublish(cname)
                     except KeyError:
-                        pass # silently ignore errors upon unpublishing
+                        logger.warning("unregistering previously unregistered %s",cname)
 
     def run(self):
         # Initial scan of running containers and publish hostnames
