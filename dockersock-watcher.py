@@ -38,7 +38,7 @@ class LocalHostWatcher(object):
             logger.critical("%s",e)
             raise(e)
 
-        self.localrule = re.compile(r'Host\s*\(\s*`(.*'+LOCAL_DOMAIN+r')`\s*\)')
+        self.localrule = re.compile(r'[Hh][Oo][Ss][Tt]\s*\(\s*`(.*'+LOCAL_DOMAIN+r')`\s*\)')
 
     def __del__(self):
         logger.info("deregistering all registered hostnames")
