@@ -1,14 +1,15 @@
 import docker
+import os
 import re
 import sys
 import signal
 import logging
 
-PUBLISH_TTL = 120
-USE_AVAHI     = True
-LOGGING_LEVEL=logging.DEBUG
+PUBLISH_TTL = os.environ.get("TTL","120")
+USE_AVAHI = os.environ.get("USE_AVAHI","yes") == "yes"
+LOGGING_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("traefik-localhosts")
 logging.basicConfig(level=LOGGING_LEVEL)
 
 if USE_AVAHI:
@@ -24,7 +25,7 @@ class LocalHostWatcher(object):
     localrule = re.compile(r'Host\s*\(\s*`(.*\.local)`\s*\)')
     hostnamerule = re.compile(r'^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$')
 
-    def __init__(self,dockerclient):
+    def __init__(self,dockerclient,ttl=PUBLISH_TTL):
         """set up AvahiPublisher and docker connection"""
         logger.debug("_init__ called on LocalHostWatcher")
         
