@@ -8,6 +8,8 @@ import logging
 PUBLISH_TTL = os.environ.get("TTL","120")
 USE_AVAHI = os.environ.get("USE_AVAHI","yes") == "yes"
 LOGGING_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
+# get local domain from enviroment and escape all period characters
+LOCAL_DOMAIN = re.sub(r'\.','\.',os.environ.get("LOCAL_DOMAIN",".local"))
 
 logger = logging.getLogger("traefik-localhosts")
 logging.basicConfig(level=LOGGING_LEVEL)
@@ -22,7 +24,6 @@ class LocalHostWatcher(object):
     """Set up compiler regexes to find relevant labels / containers"""
     # TODO check for upper/lower case
     hostrule = re.compile(r'traefik\.http\.routers\.(.*)\.rule')
-    localrule = re.compile(r'Host\s*\(\s*`(.*\.local)`\s*\)')
     hostnamerule = re.compile(r'^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$')
 
     def __init__(self,dockerclient,ttl=PUBLISH_TTL):
@@ -36,6 +37,8 @@ class LocalHostWatcher(object):
         except Exception as e:
             logger.critical("%s",e)
             raise(e)
+
+        self.localrule = re.compile(r'Host\s*\(\s*`(.*'+LOCAL_DOMAIN+r')`\s*\)')
 
     def __del__(self):
         logger.info("deregistering all registered hostnames")
