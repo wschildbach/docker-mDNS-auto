@@ -7,7 +7,7 @@ RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
           apt-get update && \
           apt-get --yes upgrade && \
           apt-get --yes install build-essential python3 libdbus-glib-1-dev pip && \
-          apt-get --yes install pkg-config cmake python3.11-venv
+          apt-get --yes install pkg-config cmake python3-venv
 
 # during build, no need to run as user
 RUN adduser --disabled-password --disabled-login --home /helper --shell /bin/false --quiet helper 2>/dev/null
@@ -27,7 +27,7 @@ RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
           rm -f /etc/apt/apt.conf.d/docker-clean && \
           apt-get update && \
 	  apt-get --yes upgrade && \
-          apt-get --yes install python3-avahi python3.11-venv
+          apt-get --yes install python3-avahi python3-venv
 
 # we have to run as root unfortunately, for access to the docker socket and to dbus
 RUN mkdir /helper
