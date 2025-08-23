@@ -1,4 +1,4 @@
-FROM debian:bookworm-slim as build-stage
+FROM debian:bookworm-slim AS build-stage
 
 ENV DEBIAN_FRONTEND noninteractive
 RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
@@ -19,7 +19,7 @@ RUN python3 -m venv /helper && \
           /helper/bin/pip install dbus-python && \
           /helper/bin/pip install mdns-publisher
 
-FROM python:3-slim as runner
+FROM python:3-slim AS runner
 
 ENV DEBIAN_FRONTEND noninteractive
 RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
