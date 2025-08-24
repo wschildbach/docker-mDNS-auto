@@ -58,9 +58,12 @@ class LocalHostWatcher(object):
     def process_event(self,event):
         if event['Type'] == 'container' and event['Action'] in ('start','die'):
             container_id = event['Actor']['ID']
-            container = self.dockerclient.containers.get(container_id)
-
-            self.process_container(event['Action'],container)
+            try:
+                container = self.dockerclient.containers.get(container_id)
+                self.process_container(event['Action'],container)
+            except Exception as e:
+                logger.warning("%s",e)
+                pass
 
     """when a container triggered start/stop event, and it has a Host label, take appropriate action"""
     def process_container(self,action,container):
