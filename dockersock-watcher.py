@@ -9,7 +9,7 @@ PUBLISH_TTL = os.environ.get("TTL","120")
 USE_AVAHI = os.environ.get("USE_AVAHI","yes") == "yes"
 LOGGING_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 # get local domain from enviroment and escape all period characters
-LOCAL_DOMAIN = re.sub(r'\.','\.',os.environ.get("LOCAL_DOMAIN",".local"))
+LOCAL_DOMAIN = re.sub(r'\.','\\.',os.environ.get("LOCAL_DOMAIN",".local"))
 
 logger = logging.getLogger("traefik-localhosts")
 logging.basicConfig(level=LOGGING_LEVEL)
