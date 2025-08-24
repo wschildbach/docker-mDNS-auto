@@ -28,7 +28,7 @@ class LocalHostWatcher(object):
 
     def __init__(self,dockerclient,ttl=PUBLISH_TTL):
         """set up AvahiPublisher and docker connection"""
-        logger.debug("_init__ called on LocalHostWatcher")
+        logger.debug("LocalHostWatcher.__init__()")
         
         try:
             self.dockerclient = dockerclient
@@ -45,12 +45,12 @@ class LocalHostWatcher(object):
         del self.avahi # not strictly necessary but safe
 
     def publish(self,cname):
-        logger.debug("calling publish %s",cname)
+        logger.debug("publishing %s",cname)
         if USE_AVAHI:
             self.avahi.publish_cname(cname, True)
 
     def unpublish(self,cname):
-        logger.debug("calling unpublish %s",cname)
+        logger.debug("unpublishing %s",cname)
         if USE_AVAHI:
             self.avahi.unpublish(cname)
 
