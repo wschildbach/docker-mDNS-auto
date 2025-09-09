@@ -1,6 +1,6 @@
 services:
-  avahi-local-hosts:
-    image: lightning:5000/wschi/traefik-avahi-helper:latest
+  docker-mDNS-auto:
+    image: docker-mdns-auto
     build: .
 #    read_only: true
     depends_on:
