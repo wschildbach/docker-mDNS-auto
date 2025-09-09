@@ -6,7 +6,9 @@ import signal
 import logging
 
 PUBLISH_TTL = os.environ.get("TTL","120")
+# You can switch off the use of avahi for debugging if your local system does not have the avahi daemon running
 USE_AVAHI = os.environ.get("USE_AVAHI","yes") == "yes"
+# These are the standard python log levels
 LOGGING_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 # get local domain from enviroment and escape all period characters
 LOCAL_DOMAIN = re.sub(r'\.','\\.',os.environ.get("LOCAL_DOMAIN",".local"))
