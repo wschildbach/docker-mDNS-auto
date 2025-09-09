@@ -111,7 +111,8 @@ def exithandler(a,b):
     sys.exit(0)
 
 def main():
-    # Set the signal handler and a 5-second alarm
+    # Set up a signal handler to exit cleanly
+
     signal.signal(signal.SIGTERM, exithandler)
     signal.signal(signal.SIGINT, exithandler)
     signal.signal(signal.SIGHUP, exithandler)
