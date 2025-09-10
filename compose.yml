@@ -3,6 +3,7 @@ services:
     image: docker-mdns-auto
     build: .
 #    read_only: true
+    restart: on-failure:10
     depends_on:
       - test1
       - test2

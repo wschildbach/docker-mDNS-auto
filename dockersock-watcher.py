@@ -20,6 +20,7 @@
 import os
 import re
 import logging
+from urllib.error import URLError
 import docker # pylint: disable=import-error
 
 PUBLISH_TTL = os.environ.get("TTL","120")
@@ -85,9 +86,10 @@ class LocalHostWatcher():
             try:
                 container = self.dockerclient.containers.get(container_id)
                 self.process_container(event['Action'],container)
-            except Exception as e:
-                logger.warning("%s",e)
-                pass
+            except URLError as error:
+                # in some cases, containers may have already gone away when we process the event.
+                # consider this harmless but log an error
+                logger.warning("%s",error)
 
     def process_container(self,action,container):
         hostkeys = filter(lambda l:self.hostrule.match(l), container.labels.keys())
