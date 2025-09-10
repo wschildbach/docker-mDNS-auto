@@ -14,10 +14,10 @@
 # If not, see <https://www.gnu.org/licenses/>.
 
 """A daemon that listens to the docker socket, waiting for starting and stopping containers,
-   and registering/deregistering .local domain names when a label mDNS.publish=host.local
+   and registering/deregistering .local domain names when a label mdns.publish=host.local
    is present """
 
-__version__ = "0.9.0"
+__version__ = "0.10.0"
 
 import os
 import re
@@ -35,7 +35,7 @@ LOGGING_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 # get local domain from enviroment and escape all period characters
 LOCAL_DOMAIN = re.sub(r'\.','\\.',os.environ.get("LOCAL_DOMAIN",".local"))
 
-logger = logging.getLogger("traefik-localhosts")
+logger = logging.getLogger("docker-mdns-publisher")
 logging.basicConfig(level=LOGGING_LEVEL)
 
 if USE_AVAHI:
@@ -46,7 +46,7 @@ class LocalHostWatcher():
     Publish and unpublish mDNS records to Avahi, using D-BUS."""
 
     # Set up compiler regexes to find relevant labels / containers
-    hostrule = re.compile(r'mDNS\.publish')
+    hostrule = re.compile(r'mdns\.publish')
     hostnamerule = re.compile(r'^\s*[\w\-\.]+\s*$')
     localrule = re.compile(r'.+'+LOCAL_DOMAIN)
 
@@ -96,12 +96,12 @@ class LocalHostWatcher():
 
     def process_container(self,action,container):
         """Run when a container triggered start/stop event.
-             Checks whether the container has a label "mDNS.publish" and if so, either
+             Checks whether the container has a label "mdns.publish" and if so, either
              registers or deregisters it"""
 
         mdns_labels = list(filter(self.hostrule.match, container.labels.keys()))
         if len(mdns_labels) > 1:
-            logger.warning("more than one mDNS.publish label per container are not supported")
+            logger.warning("more than one mdns.publish label per container are not supported")
 
         if len(mdns_labels) > 0:
             hosts = container.labels[mdns_labels[0]]
@@ -132,7 +132,7 @@ class LocalHostWatcher():
         now = time.time()
 
         logger.debug("registering already running containers...")
-        containers = self.dockerclient.containers.list(filters={"label":"mDNS.publish"})
+        containers = self.dockerclient.containers.list(filters={"label":"mdns.publish"})
         for container in containers:
             self.process_container("start", container)
 
@@ -142,7 +142,7 @@ class LocalHostWatcher():
             self.process_event(event)
 
 if __name__ == '__main__':
-    logger.info(f"docker-mDNS-auto daemon v{__version__} starting.")
+    logger.info(f"docker-mdns-publisher daemon v{__version__} starting.")
 
     localWatcher = LocalHostWatcher(docker.from_env())
     localWatcher.run() # this will never return

@@ -1,43 +1,43 @@
 services:
-  docker-mDNS-auto:
-    image: docker-mdns-auto
+  docker-mdns-publisher:
+    image: docker-mdns-publisher
     build: .
     read_only: true
     restart: on-failure:10
     privileged: true
-#    security_opt:
-#      - apparmor=traefik-avahi-helper
-#    network_mode: "host"
+    environment:
+      - LOG_LEVEL=INFO # the default
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:r
       - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket:r
 
+# the rest of this file are test/debug services that start, wait a while, then die
   test1:
     build: test
     profiles: ["debug"]
     depends_on:
-      - docker-mDNS-auto
+      - docker-mdns-publisher
     environment:
       - DUR=15
     labels:
-      - mDNS.publish=test1.local
+      - mdns.publish=test1.local
 
   test2:
     build: test
     profiles: ["debug"]
     depends_on:
-      - docker-mDNS-auto
+      - docker-mdns-publisher
     environment:
       - DUR=60
     labels:
-     - mDNS.publish=test2.local
+     - mdns.publish=test2.local
 
   test3:
     build: test
     profiles: ["debug"]
     depends_on:
-      - docker-mDNS-auto
+      - docker-mdns-publisher
     environment:
       - DUR=60
     labels:
-     - mDNS.publish=test3.local
+     - mdns.publish=test3.local
