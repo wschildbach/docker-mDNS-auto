@@ -4,9 +4,6 @@ services:
     build: .
 #    read_only: true
     restart: on-failure:10
-    depends_on:
-      - test1
-      - test2
     privileged: true
 #    security_opt:
 #      - apparmor=traefik-avahi-helper
@@ -17,6 +14,9 @@ services:
 
   test1:
     build: test
+    profiles: ["debug"]
+    depends_on:
+      - docker-mDNS-auto
     environment:
       - DUR=15
     labels:
@@ -24,6 +24,9 @@ services:
 
   test2:
     build: test
+    profiles: ["debug"]
+    depends_on:
+      - docker-mDNS-auto
     environment:
       - DUR=60
     labels:
@@ -31,6 +34,9 @@ services:
 
   test3:
     build: test
+    profiles: ["debug"]
+    depends_on:
+      - docker-mDNS-auto
     environment:
       - DUR=60
     labels:
