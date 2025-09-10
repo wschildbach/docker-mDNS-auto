@@ -10,17 +10,23 @@
 # without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # See the GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License along with this program.
+# If not, see <https://www.gnu.org/licenses/>.
 
-import docker
+"""A daemon that listens to the docker socket, waiting for starting and stopping containers,
+   and registering/deregistering .local domain names when a label mDNS.publish=host.local
+   is present """
+
 import os
 import re
 import sys
 import signal
 import logging
+import docker # pylint: disable=import-error
 
 PUBLISH_TTL = os.environ.get("TTL","120")
-# You can switch off the use of avahi for debugging if your local system does not have the avahi daemon running
+# You can switch off the use of avahi for debugging if your local system
+# does not have the avahi daemon running
 USE_AVAHI = os.environ.get("USE_AVAHI","yes") == "yes"
 # These are the standard python log levels
 LOGGING_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
@@ -31,21 +37,21 @@ logger = logging.getLogger("traefik-localhosts")
 logging.basicConfig(level=LOGGING_LEVEL)
 
 if USE_AVAHI:
-    from mpublisher import AvahiPublisher
+    from mpublisher import AvahiPublisher # pylint: disable=import-error
 
-class LocalHostWatcher(object):
+class LocalHostWatcher():
     """watch the docker socket for starting and dieing containers.
     Publish and unpublish mDNS records to Avahi, using D-BUS."""
 
-    """Set up compiler regexes to find relevant labels / containers"""
-    # TODO check for upper/lower case
-    hostrule = re.compile(r'traefik\.http\.routers\.(.*)\.rule')
-    hostnamerule = re.compile(r'^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$')
+    # Set up compiler regexes to find relevant labels / containers
+    hostrule = re.compile(r'mDNS\.publish')
+    hostnamerule = re.compile(r'^\s*[\w\-\.]+\s*$')
+    localrule = re.compile(r'.+'+LOCAL_DOMAIN)
 
     def __init__(self,dockerclient,ttl=PUBLISH_TTL):
         """set up AvahiPublisher and docker connection"""
         logger.debug("LocalHostWatcher.__init__()")
-        
+
         try:
             self.dockerclient = dockerclient
             if USE_AVAHI:
@@ -54,24 +60,28 @@ class LocalHostWatcher(object):
             logger.critical("%s",e)
             raise(e)
 
-        self.localrule = re.compile(r'[Hh][Oo][Ss][Tt]\s*\(\s*`(.*'+LOCAL_DOMAIN+r')`\s*\)')
 
     def __del__(self):
+        # this debug message is a bit of a misnomer. We cannot deregister
+        # hostnames, strictly speaking -- they will go out of existence after
+        # the TTL by themselves, once we kill the avahi publisher
         logger.info("deregistering all registered hostnames")
         del self.avahi # not strictly necessary but safe
 
     def publish(self,cname):
+        """ publish the given cname using avahi """
         logger.debug("publishing %s",cname)
         if USE_AVAHI:
             self.avahi.publish_cname(cname, True)
 
     def unpublish(self,cname):
+        """ unpublish the given cname using avahi """
         logger.debug("unpublishing %s",cname)
         if USE_AVAHI:
             self.avahi.unpublish(cname)
 
-    """when start/stop events are received, process the container that triggered the event """
     def process_event(self,event):
+        """when start/stop events are received, process the container that triggered the event """
         if event['Type'] == 'container' and event['Action'] in ('start','die'):
             container_id = event['Actor']['ID']
             try:
@@ -81,7 +91,6 @@ class LocalHostWatcher(object):
                 logger.warning("%s",e)
                 pass
 
-    """when a container triggered start/stop event, and it has a Host label, take appropriate action"""
     def process_container(self,action,container):
         hostkeys = filter(lambda l:self.hostrule.match(l), container.labels.keys())
         for h in hostkeys:
@@ -106,7 +115,9 @@ class LocalHostWatcher(object):
                         logger.warning("unregistering previously unregistered %s",cname)
 
     def run(self):
-        # Initial scan of running containers and publish hostnames
+        """Initial scan of running containers and publish hostnames.
+             Enumerate all running containers and register them"""
+
         logger.info("registering for already running containers...")
 
         containers = self.dockerclient.containers.list()
