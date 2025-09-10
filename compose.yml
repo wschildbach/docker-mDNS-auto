@@ -9,7 +9,7 @@ services:
 #      - apparmor=traefik-avahi-helper
 #    network_mode: "host"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:r
       - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket
 
   test1:
