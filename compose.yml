@@ -2,7 +2,7 @@ services:
   docker-mDNS-auto:
     image: docker-mdns-auto
     build: .
-#    read_only: true
+    read_only: true
     restart: on-failure:10
     privileged: true
 #    security_opt:
@@ -10,7 +10,7 @@ services:
 #    network_mode: "host"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:r
-      - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket
+      - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket:r
 
   test1:
     build: test
