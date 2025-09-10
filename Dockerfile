@@ -34,6 +34,6 @@ RUN mkdir /helper
 COPY --from=build-stage /helper /helper
 RUN /helper/bin/python3 -m venv /helper
 
-COPY dockersock-watcher.py /helper
+COPY dockersock_watcher.py /helper
 
-CMD /helper/bin/python3 /helper/dockersock-watcher.py
+CMD /helper/bin/python3 /helper/dockersock_watcher.py
