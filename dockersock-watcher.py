@@ -55,10 +55,10 @@ class LocalHostWatcher():
             self.dockerclient = dockerclient
             if USE_AVAHI:
                 self.avahi = AvahiPublisher(record_ttl=ttl)
-        except Exception as e:
-            logger.critical("%s",e)
-            raise(e)
-
+        except Exception as exception:
+            # we don't really know which errors to expect here so we catch them all and re-throw
+            logger.critical("%s",exception)
+            raise exception
 
     def __del__(self):
         # this debug message is a bit of a misnomer. We cannot deregister
