@@ -17,6 +17,8 @@
    and registering/deregistering .local domain names when a label mDNS.publish=host.local
    is present """
 
+__version__ = "0.9.0"
+
 import os
 import re
 import logging
@@ -129,20 +131,21 @@ class LocalHostWatcher():
 
         now = time.time()
 
-        logger.info("registering already running containers...")
-
+        logger.debug("registering already running containers...")
         containers = self.dockerclient.containers.list(filters={"label":"mDNS.publish"})
         for container in containers:
             self.process_container("start", container)
 
         # listen for Docker events and process them
-        logger.info("waiting for container start/die...")
+        logger.debug("waiting for container start/die...")
         for event in self.dockerclient.events(decode=True, since=now):
             self.process_event(event)
 
 if __name__ == '__main__':
+    logger.info(f"docker-mDNS-auto daemon v{__version__} starting.")
+
     localWatcher = LocalHostWatcher(docker.from_env())
     localWatcher.run() # this will never return
 
-    # we should never get here because main() loops indefinitely
+    # we should never get here because run() loops indefinitely
     assert False, "executing unreachable code"
