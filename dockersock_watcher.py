@@ -100,26 +100,27 @@ class LocalHostWatcher():
         if len(mdns_labels) > 1:
             logger.warning("more than one mDNS.publish label per container are not supported")
 
-        hosts = container.labels[mdns_labels[0]]
-        for cname in hosts.split(','):
-            if not self.localrule.match(cname):
-                logger.error("cannot register non-local hostname %s rejected", cname)
-                continue
-            if not self.hostnamerule.match(cname):
-                logger.error("invalid hostname %s rejected", cname)
-                continue
+        if len(mdns_labels) > 0:
+            hosts = container.labels[mdns_labels[0]]
+            for cname in hosts.split(','):
+                if not self.localrule.match(cname):
+                    logger.error("cannot register non-local hostname %s rejected", cname)
+                    continue
+                if not self.hostnamerule.match(cname):
+                    logger.error("invalid hostname %s rejected", cname)
+                    continue
 
-            # if the cname looks valid, either register or deregister it
-            if action == 'start':
-                try:
-                    self.publish(cname)
-                except KeyError:
-                    logger.warning("registering previously registered %s",cname)
-            elif action == 'die':
-                try:
-                    self.unpublish(cname)
-                except KeyError:
-                    logger.warning("unregistering previously unregistered %s",cname)
+                # if the cname looks valid, either register or deregister it
+                if action == 'start':
+                    try:
+                        self.publish(cname)
+                    except KeyError:
+                        logger.warning("registering previously registered %s",cname)
+                elif action == 'die':
+                    try:
+                        self.unpublish(cname)
+                    except KeyError:
+                        logger.warning("unregistering previously unregistered %s",cname)
 
     def run(self):
         """Initial scan of running containers and publish hostnames.
