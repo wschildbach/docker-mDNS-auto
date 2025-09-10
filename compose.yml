@@ -20,18 +20,18 @@ services:
     environment:
       - DUR=15
     labels:
-      - traefik.http.routers.test1.rule=Host (`test1.local`)
+      - mDNS.publish=test1.local
 
   test2:
     build: test
     environment:
       - DUR=60
     labels:
-      - traefik.http.routers.test2.rule=Host (`test2.local`)
+     - mDNS.publish=test2.local
 
   test3:
     build: test
     environment:
       - DUR=60
     labels:
-      - traefik.http.routers.test3.rule=Host (`test2.local`)
+     - mDNS.publish=test3.local
