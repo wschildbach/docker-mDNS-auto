@@ -19,8 +19,6 @@
 
 import os
 import re
-import sys
-import signal
 import logging
 import docker # pylint: disable=import-error
 
@@ -129,21 +127,7 @@ class LocalHostWatcher():
         for event in self.dockerclient.events(decode=True):
             self.process_event(event)
 
-def exithandler(a,b):
-    logger.info("exiting")
-#    avahi = None
-#    del localWatcher
-
-    # TODO figure out how and whether to unregister handlers
-    sys.exit(0)
-
 def main():
-    # Set up a signal handler to exit cleanly
-
-    signal.signal(signal.SIGTERM, exithandler)
-    signal.signal(signal.SIGINT, exithandler)
-    signal.signal(signal.SIGHUP, exithandler)
-
     dockerclient = docker.from_env()
     localWatcher = LocalHostWatcher(dockerclient)
     localWatcher.run() # this will never return
