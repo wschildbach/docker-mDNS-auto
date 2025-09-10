@@ -18,7 +18,7 @@ RUN python3 -m venv /helper && . /helper/bin/activate && \
           /helper/bin/pip install docker dbus-python mdns-publisher && \
           /helper/bin/pip freeze > /helper/requirements.txt
 
-COPY dockersock-watcher.py /helper
+COPY dockersock_watcher.py /helper
 
 CMD . /helper/bin/activate && /helper/bin/python3 /helper/dockersock_watcher.py
 
