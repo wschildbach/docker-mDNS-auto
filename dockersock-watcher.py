@@ -136,13 +136,9 @@ class LocalHostWatcher():
         for event in self.dockerclient.events(decode=True):
             self.process_event(event)
 
-def main():
-    dockerclient = docker.from_env()
-    localWatcher = LocalHostWatcher(dockerclient)
-    localWatcher.run() # this will never return
-
 if __name__ == '__main__':
-    main()
+    localWatcher = LocalHostWatcher(docker.from_env())
+    localWatcher.run() # this will never return
 
     # we should never get here because main() loops indefinitely
     assert False, "executing unreachable code"
