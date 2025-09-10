@@ -54,7 +54,7 @@ class LocalHostWatcher():
         try:
             self.dockerclient = dockerclient
             if USE_AVAHI:
-                self.avahi = AvahiPublisher(record_ttl=PUBLISH_TTL)
+                self.avahi = AvahiPublisher(record_ttl=ttl)
         except Exception as e:
             logger.critical("%s",e)
             raise(e)
