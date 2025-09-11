@@ -142,7 +142,7 @@ class LocalHostWatcher():
             self.process_event(event)
 
 if __name__ == '__main__':
-    logger.info(f"docker-mdns-publisher daemon v{__version__} starting.")
+    logger.info("docker-mdns-publisher daemon v%s starting.", __version__)
 
     localWatcher = LocalHostWatcher(docker.from_env())
     localWatcher.run() # this will never return
