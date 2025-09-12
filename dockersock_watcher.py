@@ -17,7 +17,7 @@
    and registering/deregistering .local domain names when a label mdns.publish=host.local
    is present """
 
-__version__ = "0.10.1"
+__version__ = "0.10.2"
 
 import os
 import re
@@ -101,16 +101,18 @@ class LocalHostWatcher():
 
         mdns_labels = list(filter(self.hostrule.match, container.labels.keys()))
         if len(mdns_labels) > 1:
+            """ This cannot happen. If more than one label with the same key is supplied, later labels
+                  override preceding labels"""
             logger.warning("more than one mdns.publish label per container are not supported")
 
         if len(mdns_labels) > 0:
             hosts = container.labels[mdns_labels[0]]
             for cname in hosts.split(','):
                 if not self.localrule.match(cname):
-                    logger.error("cannot register non-local hostname %s rejected", cname)
+                    logger.error("cannot register non-local hostname %s; rejected", cname)
                     continue
                 if not self.hostnamerule.match(cname):
-                    logger.error("invalid hostname %s rejected", cname)
+                    logger.error("invalid hostname %s; rejected", cname)
                     continue
 
                 # if the cname looks valid, either register or deregister it
@@ -131,7 +133,7 @@ class LocalHostWatcher():
 
         now = time.time()
 
-        logger.debug("registering already running containers...")
+        logger.debug("registering running containers...")
         containers = self.dockerclient.containers.list(filters={"label":"mdns.publish"})
         for container in containers:
             self.process_container("start", container)
