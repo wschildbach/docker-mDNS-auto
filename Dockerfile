@@ -39,4 +39,4 @@ RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
 RUN mkdir /helper
 COPY --from=build-stage /helper /helper
 
-CMD . /helper/bin/activate && /helper/bin/python3 /helper/dockersock_watcher.py
+CMD /helper/bin/python3 /helper/dockersock_watcher.py
