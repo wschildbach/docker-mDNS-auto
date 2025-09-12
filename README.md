@@ -31,6 +31,15 @@ services:
 Then issue `docker compose up -d`, and/or make sure that whenever your system starts up, this service gets started too.
 Details depend on your distribution.
 
+When the daemon starts up, expect to see something like
+```
+docker-mdns-publisher-1  | INFO:docker-mdns-publisher:docker-mdns-publisher daemon v0.10.2 starting.
+```
+in the log. Depending on whether any services are running which are configured to be registered, you will also see lines like
+```
+docker-mdns-publisher-1  | INFO:docker-mdns-publisher:publishing test1.local
+```
+
 ### Configuration
 
 **TTL**
@@ -38,7 +47,7 @@ Details depend on your distribution.
 
 **LOG_LEVEL**
 > This sets the verbosity of logging. Use the [log levels of the python logging module](https://docs.python.org/3/library/logging.html#logging-levels)
-(CRITICAL, ERROR, WARNING, INFO, DEBUG).
+(CRITICAL, ERROR, WARNING, INFO, DEBUG). The default is INFO.
 
 ## Using with your services
 
