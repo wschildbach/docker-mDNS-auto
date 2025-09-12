@@ -101,8 +101,8 @@ class LocalHostWatcher():
 
         mdns_labels = list(filter(self.hostrule.match, container.labels.keys()))
         if len(mdns_labels) > 1:
-            """ This cannot happen. If more than one label with the same key is supplied, later labels
-                  override preceding labels"""
+            # This cannot happen. If more than one label with the same key is supplied,
+            # subsequent labels override preceding labels
             logger.warning("more than one mdns.publish label per container are not supported")
 
         if len(mdns_labels) > 0:
