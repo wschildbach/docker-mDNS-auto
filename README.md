@@ -60,7 +60,8 @@ Obviously, you could also supply labels in the Dockerfile of your service, or on
 ```
 services:
   test:
-    image: test
+    image: alpine
+    command: "sleep 15"
     labels:
       - mdns.publish=test1.local
 ```

@@ -13,31 +13,15 @@ services:
 
 # the rest of this file are test/debug services that start, wait a while, then die
   test1:
-    build: test
+    image: alpine
+    command: "sleep 15"
     profiles: ["debug"]
-    depends_on:
-      - docker-mdns-publisher
-    environment:
-      - DUR=15
-    labels:
-      - mdns.publish=test1.local
+    depends_on: [docker-mdns-publisher]
+    labels: [mdns.publish=test1.local]
 
   test2:
-    build: test
+    image: alpine
+    command: "sleep 60"
     profiles: ["debug"]
-    depends_on:
-      - docker-mdns-publisher
-    environment:
-      - DUR=60
-    labels:
-     - mdns.publish=test2.local
-
-  test3:
-    build: test
-    profiles: ["debug"]
-    depends_on:
-      - docker-mdns-publisher
-    environment:
-      - DUR=60
-    labels:
-     - mdns.publish=test3.local
+    depends_on: [docker-mdns-publisher]
+    labels: [mdns.publish=test2.local]
