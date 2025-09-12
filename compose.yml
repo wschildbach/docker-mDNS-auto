@@ -1,6 +1,6 @@
 services:
   docker-mdns-publisher:
-    image: ghcr.io/wschildbach/docker-mdns-publisher:0.10.3
+    image: ghcr.io/wschildbach/docker-mdns-publisher:0.10.4
     build: .
     read_only: true
     restart: on-failure:10

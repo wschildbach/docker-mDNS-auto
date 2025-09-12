@@ -16,13 +16,12 @@ Create an empty directory, and create a compose.yml file:
 ```
 services:
   docker-mdns-publisher:
-    image: docker-mdns-publisher
-    build: .
+    image: ghcr.io/wschildbach/docker-mdns-publisher:0.10.4
     read_only: true
     restart: on-failure:10
     privileged: true # the service needs to run privileged for access to the D-BUS
     environment:
-      - LOG_LEVEL=DEBUG # INFO is the default
+      - LOG_LEVEL=INFO # INFO is the default
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:r
       - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket:r
