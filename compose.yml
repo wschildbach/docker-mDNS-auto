@@ -8,8 +8,8 @@ services:
     environment:
       - LOG_LEVEL=INFO # INFO is the default
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:r
-      - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket:r
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket:ro
 
 # the rest of this file are test/debug services that start, wait a while, then die
   test1:
