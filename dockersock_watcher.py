@@ -17,7 +17,7 @@
    and registering/deregistering .local domain names when a label mdns.publish=host.local
    is present """
 
-__version__ = "0.10.2"
+__version__ = "0.10.3"
 
 import os
 import re
@@ -72,13 +72,13 @@ class LocalHostWatcher():
 
     def publish(self,cname):
         """ publish the given cname using avahi """
-        logger.debug("publishing %s",cname)
+        logger.info("publishing %s",cname)
         if USE_AVAHI:
             self.avahi.publish_cname(cname, True)
 
     def unpublish(self,cname):
         """ unpublish the given cname using avahi """
-        logger.debug("unpublishing %s",cname)
+        logger.info("unpublishing %s",cname)
         if USE_AVAHI:
             self.avahi.unpublish(cname)
 
