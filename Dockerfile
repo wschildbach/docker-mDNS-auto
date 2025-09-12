@@ -24,6 +24,10 @@ COPY dockersock_watcher.py /helper
 # in the runner stage, we have to run as root unfortunately, for access to the docker socket and to dbus
 FROM python:3-slim AS runner
 
+LABEL org.opencontainers.image.source=https://github.com/wschildbach/docker-mdns-publisher
+LABEL org.opencontainers.image.description="listens to docker socket and picks up host.local names from compose labels, publishing them with avahi"
+LABEL org.opencontainers.image.licenses=GPL-3.0-or-later
+
 ENV DEBIAN_FRONTEND noninteractive
 RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
           --mount=target=/var/cache/apt,type=cache,sharing=locked \
