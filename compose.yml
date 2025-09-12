@@ -1,12 +1,12 @@
 services:
   docker-mdns-publisher:
-    image: docker-mdns-publisher
+    image: ghcr.io/wschildbach/docker-mdns-publisher:0.10.3
     build: .
     read_only: true
     restart: on-failure:10
     privileged: true
     environment:
-      - LOG_LEVEL=INFO # the default
+      - LOG_LEVEL=INFO # INFO is the default
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:r
       - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket:r
