@@ -34,7 +34,7 @@ RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
           rm -f /etc/apt/apt.conf.d/docker-clean && \
           apt-get update && \
           apt-get --yes upgrade && \
-          apt-get --yes install python3-avahi python3-docker python3-venv
+	  apt-get --yes install python3-avahi python3-docker
 
 RUN mkdir /helper
 COPY --from=build-stage /helper /helper
