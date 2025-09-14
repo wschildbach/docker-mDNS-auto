@@ -22,7 +22,6 @@ __version__ = "0.10.4"
 import os
 import re
 import logging
-import time
 from urllib.error import URLError
 import docker # pylint: disable=import-error
 
@@ -131,16 +130,19 @@ class LocalHostWatcher():
         """Initial scan of running containers and publish hostnames.
              Enumerate all running containers and register them"""
 
-        now = time.time()
+        # obtain the events stream before we iterate the containers, such that we are guaranteed
+        # to get events that occur during the iteration
+        events =  self.dockerclient.events(decode=True)
 
         logger.debug("registering running containers...")
         containers = self.dockerclient.containers.list(filters={"label":"mdns.publish"})
         for container in containers:
             self.process_container("start", container)
 
-        # listen for Docker events and process them
+        # now listen for Docker events and process them. We may double-process containers that
+        # started during the initial iteration, but that is OK.
         logger.debug("waiting for container start/die...")
-        for event in self.dockerclient.events(decode=True, since=now):
+        for event in events:
             self.process_event(event)
 
 if __name__ == '__main__':
