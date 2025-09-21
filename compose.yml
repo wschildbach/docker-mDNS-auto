@@ -15,6 +15,7 @@ services:
       - PYTHONUNBUFFERED=1
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./avahi/avahi-daemon.conf:/etc/avahi/avahi-daemon.conf:ro
 
 # the rest of this file are test/debug services that start, wait a while, then die
   test1:
