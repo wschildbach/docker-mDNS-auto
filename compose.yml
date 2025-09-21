@@ -2,7 +2,7 @@ services:
   docker-mdns-publisher:
     image: ghcr.io/wschildbach/docker-mdns-publisher:0.10
     build: .
-    read_only: true
+#    read_only: true
     restart: on-failure:10
     privileged: true
     environment:
@@ -10,7 +10,7 @@ services:
       - PYTHONUNBUFFERED=1
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket:ro
+#      - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket:ro
 
 # the rest of this file are test/debug services that start, wait a while, then die
   test1:

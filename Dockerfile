@@ -34,9 +34,17 @@ RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
           rm -f /etc/apt/apt.conf.d/docker-clean && \
           apt-get update && \
           apt-get --yes upgrade && \
-          apt-get --yes install libdbus-1-3
+          apt-get --yes install libdbus-1-3 avahi-daemon
 
 RUN mkdir /helper
 COPY --from=build-stage /helper /helper
 
-CMD ["/helper/bin/python3","/helper/dockersock_watcher.py"]
+RUN mkdir -p /run/dbus/containers /usr/share/dbus-1
+COPY dbus/* /usr/share/dbus-1
+
+
+COPY startup.sh /helper
+CMD /helper/startup.sh
+
+
+#CMD /helper/bin/python3 /helper/dockersock_watcher.py
