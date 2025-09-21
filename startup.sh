@@ -8,17 +8,21 @@ _term() {
 }
 
 echo Starting D-BUS
-echo /usr/bin/dbus-daemon  --address=unix:path=/run/dbus/dbus_foo --nofork --nopidfile --nosyslog --print-address
-/usr/bin/dbus-daemon --nofork --nopidfile --nosyslog --print-address --session
+/usr/bin/dbus-daemon --fork --nopidfile --nosyslog --print-address=1 --system >/tmp/ad
 pid_dbus=$!
+sleep 1
+
+DBUS_SESSION_BUS_ADDRESS=$(cat /tmp/ad)
+
+echo DBUS=$DBUS_SESSION_BUS_ADDRESS
+
 echo Starting avahi
-#/sbin/avahi-daemon &
+/sbin/avahi-daemon &
 pid_avahi=$!
 
-#DBUS_SESSION_BUS_ADDRESS
 
 trap _term SIGTERM
 
-#/helper/bin/python3 /helper/dockersock_watcher.py
+/helper/bin/python3 /helper/dockersock_watcher.py
 
 #wait "$child"
