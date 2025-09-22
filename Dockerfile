@@ -45,3 +45,4 @@ COPY dbus/* /usr/share/dbus-1
 
 COPY startup.sh /helper
 CMD ["/helper/startup.sh"]
+HEALTHCHECK --interval=60s --start-period=10s  CMD [ "/sbin/avahi-daemon", "-c" ]
