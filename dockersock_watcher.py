@@ -57,6 +57,9 @@ class LocalHostWatcher():
             self.dockerclient = dockerclient
             if USE_AVAHI:
                 self.avahi = AvahiPublisher(record_ttl=ttl)
+                if not self.avahi.available():
+                    raise Exception("avahi daemon not available") # pylint: disable=broad-exception-raised
+
         except Exception as exception:
             # we don't really know which errors to expect here so we catch them all and re-throw
             logger.critical("%s",exception)
