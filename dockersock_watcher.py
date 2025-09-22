@@ -76,7 +76,19 @@ class LocalHostWatcher():
         """ publish the given cname using avahi """
         logger.info("publishing %s",cname)
         if USE_AVAHI:
-            self.avahi.publish_cname(cname, True)
+            logger.debug("checking whether %s has already been published", cname)
+            res = self.avahi.resolve(cname)
+            if res is not None:
+                # This has already been published
+                logger.error("trying to publish %s which has already been published by %s",
+                              cname, res)
+                return False
+            logger.debug("... not published. %s is available", cname)
+
+            status = self.avahi.publish_cname(cname, False)
+            if not status:
+                logger.error("Failed to publish '%s'", cname)
+                return False
 
     def unpublish(self,cname):
         """ unpublish the given cname using avahi """

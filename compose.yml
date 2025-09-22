@@ -26,3 +26,10 @@ services:
     profiles: ["debug"]
     depends_on: [docker-mdns-publisher]
     labels: [mdns.publish=test2.local]
+
+  test3:
+    image: alpine
+    command: "sleep 60"
+    profiles: ["debug"]
+    depends_on: [docker-mdns-publisher]
+    labels: [mdns.publish=test2.local] # publish same label and expect error
