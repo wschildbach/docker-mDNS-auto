@@ -43,6 +43,5 @@ COPY --from=build-stage /helper /helper
 RUN mkdir -p /run/dbus/containers /usr/share/dbus-1
 COPY dbus/* /usr/share/dbus-1
 
-COPY startup.sh /helper
-CMD ["/helper/startup.sh"]
+CMD ["/helper/bin/python3","/helper/dockersock_watcher.py"]
 HEALTHCHECK --interval=60s --start-period=10s  CMD [ "/sbin/avahi-daemon", "-c" ]

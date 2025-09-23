@@ -21,6 +21,8 @@ __version__ = "0.10.5"
 
 import os
 import re
+import time
+import subprocess
 import logging
 from urllib.error import URLError
 import docker # pylint: disable=import-error
@@ -162,9 +164,40 @@ class LocalHostWatcher():
         for event in events:
             self.process_event(event)
 
-if __name__ == '__main__':
-    logger.info("docker-mdns-publisher daemon v%s starting.", __version__)
+def start_dbus():
+    """ start the d-bus daemon.
+        This is needed for the communication with avahi """
+    logger.info("D-Bus daemon starting...")
+    proc = subprocess.run(["/usr/bin/dbus-daemon","--fork","--nopidfile","--nosyslog","--system"],
+                          check=True)
+    time.sleep(1)
+    logger.info("Success.")
+    return proc
 
+def start_avahi():
+    """ start and daemonize the avahi daemon """
+    logger.info("avahi daemon starting...")
+    proc = subprocess.run(["/sbin/avahi-daemon",
+                            "--file=/etc/avahi/avahi-daemon.conf","--daemonize","--debug"],
+                            check=True)
+
+    # loop until the avahi daemon is started.
+    logger.debug("waiting for avahi daemon to come up...")
+    while True:
+        time.sleep(1)
+        process = subprocess.run(["/sbin/avahi-daemon","-c"], check=False)
+        if process.returncode == 0:
+            break
+
+    logger.info("Success.")
+    return proc
+
+if __name__ == '__main__':
+
+    dbus_proc= start_dbus()
+    avahi_proc = start_avahi()
+
+    logger.info("docker-mdns-publisher daemon v%s starting.", __version__)
     localWatcher = LocalHostWatcher(docker.from_env())
     localWatcher.run() # this will never return
 
