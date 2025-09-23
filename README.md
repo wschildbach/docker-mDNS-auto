@@ -13,7 +13,7 @@ network, using .local domain labels to access them.
 
 Create an empty directory, and create a compose.yml file:
 
-```
+```yaml
 services:
   docker-mdns-publisher:
     image: ghcr.io/wschildbach/docker-mdns-publisher:0.10
@@ -31,15 +31,20 @@ Then issue `docker compose up -d`, and/or make sure that whenever your system st
 Details depend on your distribution.
 
 When the daemon starts up, expect to see something like
+
 ```
 docker-mdns-publisher-1  | INFO:docker-mdns-publisher:docker-mdns-publisher daemon v**** starting.
 ```
-in the log. Depending on whether any services are running which are configured to be registered, you will also see lines like
+
+in the log. Depending on whether any services are running which are configured to be registered, you will also see lines such as
+
 ```
 docker-mdns-publisher-1  | INFO:docker-mdns-publisher:publishing test1.local
 ```
 
 ### Configuration
+
+The daemon is configured through environment variables.
 
 **TTL**
  > This sets the TTL for the mDNS publication, in seconds. The default is 120 seconds.
@@ -65,7 +70,7 @@ Obviously, you could also supply labels in the Dockerfile of your service, or on
 
 ### Example
 
-```
+```yaml
 services:
   test:
     image: alpine
@@ -80,12 +85,12 @@ To enable debugging on the daemon, set the `LOG_LEVEL` environment variable.
 `LOG_LEVEL` must be set to one of the [standard python log levels](https://docs.python.org/3/library/logging.html#logging-levels).
 You can set this in the compose.yml file:
 
-```
+```yaml
     environment:
       - LOG_LEVEL=DEBUG
 ```
 
-If the machine which you develop on does not have an avahi daemon, or you don't want any mDNS publication during development,
+If the machine which you develop on does not have an avahi daemon, or you do not want any mDNS publication during development,
 set `USE_AVAHI=NO` for the daemon.
 
 The compose.yml file provides a few test services which register themselves. Start the daemon using
@@ -93,6 +98,7 @@ The compose.yml file provides a few test services which register themselves. Sta
 The test services simply wait for a predetermined time, then terminate.
 
 ## Credits
+
 The project took inspiration from [github/hardillb/traefik-avahi-helper](https://github.com/hardillb/traefik-avahi-helper)
 which in turn borrows from [github/alticelabs/mdns-publisher](https://github.com/alticelabs/mdns-publisher).
 
