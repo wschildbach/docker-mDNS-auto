@@ -3,8 +3,9 @@ services:
     image: ghcr.io/wschildbach/docker-mdns-publisher:0.10
     build: .
     read_only: true
-    network_mode: host
-    tmpfs: # provide a temp mount for the dbus creates a socket, and for avahi
+    ports:
+      - '5353:5353/udp' # make sure the mDNS port is reachable
+    tmpfs: # provide a temp mount for the dbus socket, and for avahi
       - /tmp
       - /run/dbus
       - /run/avahi-daemon
