@@ -10,7 +10,6 @@ services:
       - /run/dbus
       - /run/avahi-daemon
     restart: on-failure:10
-    privileged: true
     environment:
       - LOG_LEVEL=INFO # INFO is the default
       - PYTHONUNBUFFERED=1
