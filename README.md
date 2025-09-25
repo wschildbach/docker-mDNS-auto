@@ -9,6 +9,11 @@ with the avahi daemon.
 This makes it very convenient to run docker containers that expose services to the local
 network, using .local domain labels to access them.
 
+Unless the rest of your system needs control of the avahi daemon, the container
+can run the avahi daemon internally, such that it does not need to be installed
+on the host. This also obviates the need to give the container access
+to the D-Bus.
+
 ## Deploying
 
 Create an empty directory, and create a compose.yml file:
@@ -53,7 +58,12 @@ The daemon is configured through environment variables.
 > This sets the verbosity of logging. Use the [log levels of the python logging module](https://docs.python.org/3/library/logging.html#logging-levels)
 (CRITICAL, ERROR, WARNING, INFO, DEBUG). The default is INFO.
 
-## Using with your services
+**disable_avahi**
+> This disables the internal avahi daemon. In this case, an avahi daemon
+needs to run on the host. Be sure to give the container access to the D-Bus
+such that it can talk to the avahi daemon on the host.
+
+## Publishing an mdns record for your service
 
 In your service compose file definition, add a label `mdns.publish=myhost.local` and restart your
 service/container (replace `myhost` with whatever DNS name you want to give your service). The
