@@ -23,6 +23,8 @@ import os
 import re
 import time
 import subprocess
+import signal
+import functools
 import logging
 from urllib.error import URLError
 import docker # pylint: disable=import-error
@@ -174,9 +176,12 @@ def start_dbus():
     logger.info("Success.")
     return proc
 
+
 def start_avahi():
     """ start and daemonize the avahi daemon """
     logger.info("avahi daemon starting...")
+#    proc = subprocess.Popen(["/sbin/avahi-daemon",
+#                    "--file=/etc/avahi/avahi-daemon.conf","--demonize","--debug"])
     proc = subprocess.run(["/sbin/avahi-daemon",
                             "--file=/etc/avahi/avahi-daemon.conf","--daemonize","--debug"],
                             check=True)
@@ -192,13 +197,38 @@ def start_avahi():
     logger.info("Success.")
     return proc
 
+def handle_signals(localWatcher, signum, frame):
+    """ shut down avahi and dbus """
+
+    signame = signal.Signals(signum).name
+    logger.debug("Cleaning up on %s (%s)", signame, signum)
+
+    del 
+
+#    logger.info("shutting down avahi daemon")
+#    subprocess.run(["/usr/sbin/avahi-daemon", "-k"], check=False) # this fails
+
+#    logger.info("shutting down dbus daemon")
+#    logger.info("proc = %s", procs["dbus"])
+
+    os._exit(0)
+
 if __name__ == '__main__':
 
-    dbus_proc= start_dbus()
-    avahi_proc = start_avahi()
+#    procs = {}
+
+#    procs["dbus"]  = 
+    start_dbus()
+#    procs["avahi"] = 
+    start_avahi()
 
     logger.info("docker-mdns-publisher daemon v%s starting.", __version__)
     localWatcher = LocalHostWatcher(docker.from_env())
+
+    # To make sure records disappear immediately on exit, clean up properly...
+    signal.signal(signal.SIGTERM, functools.partial(handle_signals, localWatcher))
+    signal.signal(signal.SIGINT,  functools.partial(handle_signals, localWatcher))
+
     localWatcher.run() # this will never return
 
     # we should never get here because run() loops indefinitely

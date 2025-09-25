@@ -11,11 +11,13 @@ services:
       - /run/avahi-daemon
     restart: on-failure:10
     environment:
-      - LOG_LEVEL=INFO # INFO is the default
+      - LOG_LEVEL=DEBUG # INFO is the default
       - PYTHONUNBUFFERED=1
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./avahi/avahi-daemon.conf:/etc/avahi/avahi-daemon.conf:ro
+#    networks:
+#      - test
 
 # the rest of this file are test/debug services that start, wait a while, then die
   test1:
@@ -24,6 +26,8 @@ services:
     profiles: ["debug"]
     depends_on: [docker-mdns-publisher]
     labels: [mdns.publish=test1.local]
+    networks:
+      - test
 
   test2:
     image: alpine
@@ -38,3 +42,6 @@ services:
     profiles: ["debug"]
     depends_on: [docker-mdns-publisher]
     labels: [mdns.publish=test2.local] # publish same label and expect error
+
+networks:
+  test: {}
