@@ -25,6 +25,7 @@ import time
 import subprocess
 import signal
 import functools
+#import Process
 import logging
 from urllib.error import URLError
 import docker # pylint: disable=import-error
@@ -57,10 +58,17 @@ class LocalHostWatcher():
         """set up AvahiPublisher and docker connection"""
         logger.debug("LocalHostWatcher.__init__()")
 
+        self.dockerclient = dockerclient
+        self.ttl = ttl
+        self.avahi = None
+
+    def __enter__(self):
         try:
-            self.dockerclient = dockerclient
             if USE_AVAHI:
-                self.avahi = AvahiPublisher(record_ttl=ttl)
+                self.__start_dbus()
+                self.__start_avahi()
+
+                self.avahi = AvahiPublisher(record_ttl=self.ttl)
                 if not self.avahi.available():
                     raise Exception("avahi daemon not available") # pylint: disable=broad-exception-raised
 
@@ -69,14 +77,52 @@ class LocalHostWatcher():
             logger.critical("%s",exception)
             raise exception
 
-    def __del__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
         logger.info("deregistering all registered hostnames")
 
-        # this code is lifted from mpublisher
-        for group in self.avahi.published.values():
-            group.Reset()
+        # Handle exceptions (if any)
+        if exc_type:
+            logger.debug("A %s occurred: %s",exc_type,exc_value)
 
-        del self.avahi # not strictly necessary but safe
+        if self.avahi:
+            # this code is lifted from mpublisher
+            for group in self.avahi.published.values():
+                group.Reset()
+
+            self.avahi = None
+
+        return True  # Suppress exceptions
+
+    def __start_dbus(self):
+        """ start the d-bus daemon.
+            This is needed for the communication with avahi """
+        logger.info("D-Bus daemon starting...")
+        proc = subprocess.run(["/usr/bin/dbus-daemon","--fork","--nopidfile","--nosyslog","--system"],
+                            check=True)
+        time.sleep(1)
+        logger.info("Success.")
+        return proc
+
+    def __start_avahi(self):
+        """ start and daemonize the avahi daemon """
+        logger.info("avahi daemon starting...")
+
+        proc = subprocess.run(["/sbin/avahi-daemon",
+                                "--file=/etc/avahi/avahi-daemon.conf","--daemonize","--debug"],
+                                check=True)
+
+        # loop until the avahi daemon is started.
+        logger.debug("waiting for avahi daemon to come up...")
+        while True:
+            time.sleep(1)
+            process = subprocess.run(["/sbin/avahi-daemon","-c"], check=False)
+            if process.returncode == 0:
+                break
+
+        logger.info("Success.")
+        return proc
 
     def publish(self,cname):
         """ publish the given cname using avahi """
@@ -166,70 +212,18 @@ class LocalHostWatcher():
         for event in events:
             self.process_event(event)
 
-def start_dbus():
-    """ start the d-bus daemon.
-        This is needed for the communication with avahi """
-    logger.info("D-Bus daemon starting...")
-    proc = subprocess.run(["/usr/bin/dbus-daemon","--fork","--nopidfile","--nosyslog","--system"],
-                          check=True)
-    time.sleep(1)
-    logger.info("Success.")
-    return proc
-
-
-def start_avahi():
-    """ start and daemonize the avahi daemon """
-    logger.info("avahi daemon starting...")
-#    proc = subprocess.Popen(["/sbin/avahi-daemon",
-#                    "--file=/etc/avahi/avahi-daemon.conf","--demonize","--debug"])
-    proc = subprocess.run(["/sbin/avahi-daemon",
-                            "--file=/etc/avahi/avahi-daemon.conf","--daemonize","--debug"],
-                            check=True)
-
-    # loop until the avahi daemon is started.
-    logger.debug("waiting for avahi daemon to come up...")
-    while True:
-        time.sleep(1)
-        process = subprocess.run(["/sbin/avahi-daemon","-c"], check=False)
-        if process.returncode == 0:
-            break
-
-    logger.info("Success.")
-    return proc
-
 def handle_signals(localWatcher, signum, frame):
     """ shut down avahi and dbus """
 
     signame = signal.Signals(signum).name
     logger.debug("Cleaning up on %s (%s)", signame, signum)
 
-    del 
-
-#    logger.info("shutting down avahi daemon")
-#    subprocess.run(["/usr/sbin/avahi-daemon", "-k"], check=False) # this fails
-
-#    logger.info("shutting down dbus daemon")
-#    logger.info("proc = %s", procs["dbus"])
-
-    os._exit(0)
+    raise KeyboardInterrupt()
 
 if __name__ == '__main__':
 
-#    procs = {}
-
-#    procs["dbus"]  = 
-    start_dbus()
-#    procs["avahi"] = 
-    start_avahi()
-
     logger.info("docker-mdns-publisher daemon v%s starting.", __version__)
-    localWatcher = LocalHostWatcher(docker.from_env())
-
-    # To make sure records disappear immediately on exit, clean up properly...
-    signal.signal(signal.SIGTERM, functools.partial(handle_signals, localWatcher))
-    signal.signal(signal.SIGINT,  functools.partial(handle_signals, localWatcher))
-
-    localWatcher.run() # this will never return
-
-    # we should never get here because run() loops indefinitely
-    assert False, "executing unreachable code"
+    with LocalHostWatcher(docker.from_env()) as localWatcher:
+        signal.signal(signal.SIGTERM, functools.partial(handle_signals, localWatcher))
+        signal.signal(signal.SIGINT,  functools.partial(handle_signals, localWatcher))
+        localWatcher.run() # this will never return
