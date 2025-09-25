@@ -80,13 +80,13 @@ class LocalHostWatcher():
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        logger.info("deregistering all registered hostnames")
-
         # Handle exceptions (if any)
         if exc_type:
             logger.debug("A %s occurred: %s",exc_type,exc_value)
 
         if self.avahi:
+            logger.info("deregistering all registered hostnames")
+
             # this code is lifted from mpublisher
             for group in self.avahi.published.values():
                 group.Reset()
