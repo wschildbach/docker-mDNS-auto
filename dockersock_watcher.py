@@ -66,10 +66,12 @@ class LocalHostWatcher():
             raise exception
 
     def __del__(self):
-        # this debug message is a bit of a misnomer. We cannot deregister
-        # hostnames, strictly speaking -- they will go out of existence after
-        # the TTL by themselves, once we kill the avahi publisher
         logger.info("deregistering all registered hostnames")
+
+        # this code is lifted from mpublisher
+        for group in self.avahi.published.values():
+            group.Reset()
+
         del self.avahi # not strictly necessary but safe
 
     def publish(self,cname):
