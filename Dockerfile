@@ -1,6 +1,6 @@
 FROM python:3-slim AS build-stage
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
           --mount=target=/var/cache/apt,type=cache,sharing=locked \
           rm -f /etc/apt/apt.conf.d/docker-clean && \
@@ -28,7 +28,7 @@ LABEL org.opencontainers.image.source=https://github.com/wschildbach/docker-mdns
 LABEL org.opencontainers.image.description="listens to docker socket and picks up host.local names from compose labels, publishing them with avahi"
 LABEL org.opencontainers.image.licenses=GPL-3.0-or-later
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
           --mount=target=/var/cache/apt,type=cache,sharing=locked \
           rm -f /etc/apt/apt.conf.d/docker-clean && \
@@ -39,4 +39,4 @@ RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
 RUN mkdir /helper
 COPY --from=build-stage /helper /helper
 
-CMD /helper/bin/python3 /helper/dockersock_watcher.py
+CMD ["/helper/bin/python3","/helper/dockersock_watcher.py"]
