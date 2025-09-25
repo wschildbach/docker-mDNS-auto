@@ -6,18 +6,16 @@ services:
     ports:
       - '5353:5353/udp' # make sure the mDNS port is reachable
     tmpfs: # provide a temp mount for the dbus socket, and for avahi
-      - /tmp
       - /run/dbus
       - /run/avahi-daemon
     restart: on-failure:10
     environment:
-      - LOG_LEVEL=DEBUG # INFO is the default
+      - LOG_LEVEL=INFO # INFO is the default
       - PYTHONUNBUFFERED=1
     volumes:
+      # map the docker socket to be able to monitor container lifecycles
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./avahi/avahi-daemon.conf:/etc/avahi/avahi-daemon.conf:ro
-#    networks:
-#      - test
 
 # the rest of this file are test/debug services that start, wait a while, then die
   test1:
@@ -26,8 +24,6 @@ services:
     profiles: ["debug"]
     depends_on: [docker-mdns-publisher]
     labels: [mdns.publish=test1.local]
-    networks:
-      - test
 
   test2:
     image: alpine
@@ -42,6 +38,3 @@ services:
     profiles: ["debug"]
     depends_on: [docker-mdns-publisher]
     labels: [mdns.publish=test2.local] # publish same label and expect error
-
-networks:
-  test: {}
