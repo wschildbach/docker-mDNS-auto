@@ -7,6 +7,7 @@ services:
     privileged: true
     environment:
       - LOG_LEVEL=INFO # INFO is the default
+      - PYTHONUNBUFFERED=1
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket:ro
