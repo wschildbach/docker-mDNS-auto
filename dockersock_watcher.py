@@ -73,6 +73,12 @@ def start_avahi():
     logger.info("Success.")
     return proc
 
+class ResourceError(Exception):
+    """Exception for when a resource is not available, such as a process"""
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
+
 class LocalHostWatcher():
     """watch the docker socket for starting and dieing containers.
     Publish and unpublish mDNS records to Avahi, using D-BUS."""
@@ -98,7 +104,7 @@ class LocalHostWatcher():
 
                 self.avahi = AvahiPublisher(record_ttl=self.ttl)
                 if not self.avahi.available():
-                    raise Exception("avahi daemon not available")
+                    raise ResourceError("avahi daemon not available")
 
         except Exception as exception:
             # we don't really know which errors to expect here so we catch them all and re-throw
