@@ -24,7 +24,6 @@ import re
 import time
 import subprocess
 import signal
-import functools
 #import Process
 import logging
 from urllib.error import URLError
@@ -212,7 +211,7 @@ class LocalHostWatcher():
         for event in events:
             self.process_event(event)
 
-def handle_signals(localWatcher, signum, frame):
+def handle_signals(signum):
     """ shut down avahi and dbus """
 
     signame = signal.Signals(signum).name
@@ -224,6 +223,6 @@ if __name__ == '__main__':
 
     logger.info("docker-mdns-publisher daemon v%s starting.", __version__)
     with LocalHostWatcher(docker.from_env()) as localWatcher:
-        signal.signal(signal.SIGTERM, functools.partial(handle_signals, localWatcher))
-        signal.signal(signal.SIGINT,  functools.partial(handle_signals, localWatcher))
+        signal.signal(signal.SIGTERM, handle_signals)
+        signal.signal(signal.SIGINT,  handle_signals)
         localWatcher.run() # this will never return
