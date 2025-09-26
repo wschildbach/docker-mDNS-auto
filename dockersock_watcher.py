@@ -98,7 +98,7 @@ class LocalHostWatcher():
 
                 self.avahi = AvahiPublisher(record_ttl=self.ttl)
                 if not self.avahi.available():
-                    raise Exception("avahi daemon not available") # pylint: disable=broad-exception-raised
+                    raise Exception("avahi daemon not available")
 
         except Exception as exception:
             # we don't really know which errors to expect here so we catch them all and re-throw
@@ -140,6 +140,7 @@ class LocalHostWatcher():
             if not status:
                 logger.error("Failed to publish '%s'", cname)
                 return False
+        return True
 
     def unpublish(self,cname):
         """ unpublish the given cname using avahi """
