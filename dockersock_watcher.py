@@ -28,21 +28,18 @@ import signal
 import logging
 from urllib.error import URLError
 import docker # pylint: disable=import-error
+from mpublisher import AvahiPublisher # pylint: disable=import-error
 
 PUBLISH_TTL = os.environ.get("TTL","120")
-# You can switch off the use of avahi for debugging if your local system
-# does not have the avahi daemon running
-USE_AVAHI = os.environ.get("USE_AVAHI","yes") == "yes"
 # These are the standard python log levels
 LOGGING_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 # get local domain from enviroment and escape all period characters
 LOCAL_DOMAIN = re.sub(r'\.','\\.',os.environ.get("LOCAL_DOMAIN",".local"))
+# the internal avahi daemon can be disabled
+DISABLE_AVAHI = os.environ.get("DISABLE_AVAHI","no") == "yes"
 
 logger = logging.getLogger("docker-mdns-publisher")
 logging.basicConfig(level=LOGGING_LEVEL)
-
-if USE_AVAHI:
-    from mpublisher import AvahiPublisher # pylint: disable=import-error
 
 def start_dbus():
     """ start the d-bus daemon.
@@ -98,13 +95,13 @@ class LocalHostWatcher():
 
     def __enter__(self):
         try:
-            if USE_AVAHI:
+            if not DISABLE_AVAHI:
                 start_dbus()
                 start_avahi()
 
-                self.avahi = AvahiPublisher(record_ttl=self.ttl)
-                if not self.avahi.available():
-                    raise ResourceError("avahi daemon not available")
+            self.avahi = AvahiPublisher(record_ttl=self.ttl)
+            if not self.avahi.available():
+                raise ResourceError("avahi daemon not available")
 
         except Exception as exception:
             # we don't really know which errors to expect here so we catch them all and re-throw
@@ -132,27 +129,27 @@ class LocalHostWatcher():
     def publish(self,cname):
         """ publish the given cname using avahi """
         logger.info("publishing %s",cname)
-        if USE_AVAHI:
-            logger.debug("checking whether %s has already been published", cname)
-            res = self.avahi.resolve(cname)
-            if res is not None:
-                # This has already been published
-                logger.error("trying to publish %s which has already been published by %s",
-                              cname, res)
-                return False
-            logger.debug("... not published. %s is available", cname)
 
-            status = self.avahi.publish_cname(cname, False)
-            if not status:
-                logger.error("Failed to publish '%s'", cname)
-                return False
+        logger.debug("checking whether %s has already been published", cname)
+        res = self.avahi.resolve(cname)
+        if res is not None:
+            # This has already been published
+            logger.error("trying to publish %s which has already been published by %s",
+                            cname, res)
+            return False
+        logger.debug("... not published. %s is available", cname)
+
+        status = self.avahi.publish_cname(cname, False)
+        if not status:
+            logger.error("Failed to publish '%s'", cname)
+            return False
+
         return True
 
     def unpublish(self,cname):
         """ unpublish the given cname using avahi """
         logger.info("unpublishing %s",cname)
-        if USE_AVAHI:
-            self.avahi.unpublish(cname)
+        self.avahi.unpublish(cname)
 
     def process_event(self,event):
         """when start/stop events are received, process the container that triggered the event """

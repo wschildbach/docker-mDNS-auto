@@ -58,7 +58,7 @@ The daemon is configured through environment variables.
 > This sets the verbosity of logging. Use the [log levels of the python logging module](https://docs.python.org/3/library/logging.html#logging-levels)
 (CRITICAL, ERROR, WARNING, INFO, DEBUG). The default is INFO.
 
-**disable_avahi**
+**DISABLE_AVAHI**
 > This disables the internal avahi daemon. In this case, an avahi daemon
 needs to run on the host. Be sure to give the container access to the D-Bus
 such that it can talk to the avahi daemon on the host.
