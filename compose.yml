@@ -1,16 +1,21 @@
 services:
   docker-mdns-publisher:
-    image: ghcr.io/wschildbach/docker-mdns-publisher:0.10
+    image: ghcr.io/wschildbach/docker-mdns-publisher:1.0
     build: .
     read_only: true
+    ports:
+      - '5353:5353/udp' # make sure the mDNS port is reachable
+    tmpfs: # provide a temp mount for the dbus socket, and for avahi
+      - /run/dbus
+      - /run/avahi-daemon
     restart: on-failure:10
-    privileged: true
     environment:
       - LOG_LEVEL=INFO # INFO is the default
       - PYTHONUNBUFFERED=1
     volumes:
+      # map the docker socket to be able to monitor container lifecycles
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket:ro
+      - ./avahi/avahi-daemon.conf:/etc/avahi/avahi-daemon.conf:ro
 
 # the rest of this file are test/debug services that start, wait a while, then die
   test1:
@@ -27,6 +32,7 @@ services:
     depends_on: [docker-mdns-publisher]
     labels: [mdns.publish=test2.local]
 
+  # the third container uses the same label as the second, to test error reporting
   test3:
     image: alpine
     command: "sleep 60"
