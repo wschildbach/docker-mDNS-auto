@@ -44,7 +44,7 @@ logging.basicConfig(level=LOGGING_LEVEL)
 if USE_AVAHI:
     from mpublisher import AvahiPublisher # pylint: disable=import-error
 
-def __start_dbus():
+def start_dbus():
     """ start the d-bus daemon.
         This is needed for the communication with avahi """
     logger.info("D-Bus daemon starting...")
@@ -54,7 +54,7 @@ def __start_dbus():
     logger.info("Success.")
     return proc
 
-def __start_avahi():
+def start_avahi():
     """ start and daemonize the avahi daemon """
     logger.info("avahi daemon starting...")
 
@@ -93,8 +93,8 @@ class LocalHostWatcher():
     def __enter__(self):
         try:
             if USE_AVAHI:
-                __start_dbus()
-                __start_avahi()
+                start_dbus()
+                start_avahi()
 
                 self.avahi = AvahiPublisher(record_ttl=self.ttl)
                 if not self.avahi.available():
