@@ -44,6 +44,35 @@ logging.basicConfig(level=LOGGING_LEVEL)
 if USE_AVAHI:
     from mpublisher import AvahiPublisher # pylint: disable=import-error
 
+def __start_dbus():
+    """ start the d-bus daemon.
+        This is needed for the communication with avahi """
+    logger.info("D-Bus daemon starting...")
+    proc = subprocess.run(["/usr/bin/dbus-daemon","--fork","--nopidfile","--nosyslog","--system"],
+                        check=True)
+    time.sleep(1)
+    logger.info("Success.")
+    return proc
+
+def __start_avahi():
+    """ start and daemonize the avahi daemon """
+    logger.info("avahi daemon starting...")
+
+    proc = subprocess.run(["/sbin/avahi-daemon",
+                            "--file=/etc/avahi/avahi-daemon.conf","--daemonize","--debug"],
+                            check=True)
+
+    # loop until the avahi daemon is started.
+    logger.debug("waiting for avahi daemon to come up...")
+    while True:
+        time.sleep(1)
+        process = subprocess.run(["/sbin/avahi-daemon","-c"], check=False)
+        if process.returncode == 0:
+            break
+
+    logger.info("Success.")
+    return proc
+
 class LocalHostWatcher():
     """watch the docker socket for starting and dieing containers.
     Publish and unpublish mDNS records to Avahi, using D-BUS."""
@@ -64,8 +93,8 @@ class LocalHostWatcher():
     def __enter__(self):
         try:
             if USE_AVAHI:
-                self.__start_dbus()
-                self.__start_avahi()
+                __start_dbus()
+                __start_avahi()
 
                 self.avahi = AvahiPublisher(record_ttl=self.ttl)
                 if not self.avahi.available():
@@ -93,35 +122,6 @@ class LocalHostWatcher():
             self.avahi = None
 
         return True  # Suppress exceptions
-
-    def __start_dbus(self):
-        """ start the d-bus daemon.
-            This is needed for the communication with avahi """
-        logger.info("D-Bus daemon starting...")
-        proc = subprocess.run(["/usr/bin/dbus-daemon","--fork","--nopidfile","--nosyslog","--system"],
-                            check=True)
-        time.sleep(1)
-        logger.info("Success.")
-        return proc
-
-    def __start_avahi(self):
-        """ start and daemonize the avahi daemon """
-        logger.info("avahi daemon starting...")
-
-        proc = subprocess.run(["/sbin/avahi-daemon",
-                                "--file=/etc/avahi/avahi-daemon.conf","--daemonize","--debug"],
-                                check=True)
-
-        # loop until the avahi daemon is started.
-        logger.debug("waiting for avahi daemon to come up...")
-        while True:
-            time.sleep(1)
-            process = subprocess.run(["/sbin/avahi-daemon","-c"], check=False)
-            if process.returncode == 0:
-                break
-
-        logger.info("Success.")
-        return proc
 
     def publish(self,cname):
         """ publish the given cname using avahi """
