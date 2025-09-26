@@ -23,7 +23,7 @@ services:
     command: "sleep 15"
     profiles: ["debug"]
     depends_on: [docker-mdns-publisher]
-    labels: [mdns.publish=test1.local]
+    labels: [mdns.publish=test1.mysubdomain.local]
 
   test2:
     image: alpine
