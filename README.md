@@ -74,6 +74,11 @@ container has been stopped.
 needs to run on the host. Be sure to also give the container access to the D-Bus
 such that it can talk to the hosts avahi daemon.
 
+**EXTRA_PROBING**
+> Normally, the daemon checks whether a given cname is already published and warns or errors if it is.
+This makes operation more robust but adds a lot of delay to publication. Setting EXTRA_PROBING to "no"
+disables the additional check.
+
 ## Publishing an mdns record for your service
 
 In your service compose file definition, add a label `mdns.publish=myhost.local` and restart your

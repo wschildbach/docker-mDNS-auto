@@ -17,7 +17,7 @@
    and registering/deregistering .local domain names when a label mdns.publish=host.local
    is present """
 
-__version__ = "1.0.0-rc1"
+__version__ = "1.0.0-rc2"
 
 import os
 import re
@@ -37,6 +37,9 @@ LOGGING_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 LOCAL_DOMAIN = re.sub(r'\.','\\.',os.environ.get("LOCAL_DOMAIN",".local"))
 # the internal avahi daemon can be disabled
 DISABLE_AVAHI = os.environ.get("DISABLE_AVAHI","no") == "yes"
+# Set EXTRA_PROBING to check whether the name is already registered.
+# This is more robust but slower
+EXTRA_PROBING = os.environ.get("EXTRA_PROBING","yes").lower() in ("true","yes")
 
 logger = logging.getLogger("docker-mdns-publisher")
 logging.basicConfig(level=LOGGING_LEVEL)
@@ -130,16 +133,7 @@ class LocalHostWatcher():
         """ publish the given cname using avahi """
         logger.info("publishing %s",cname)
 
-        logger.debug("checking whether %s has already been published", cname)
-        res = self.avahi.resolve(cname)
-        if res is not None:
-            # This has already been published
-            logger.error("trying to publish %s which has already been published by %s",
-                            cname, res)
-            return False
-        logger.debug("... not published. %s is available", cname)
-
-        status = self.avahi.publish_cname(cname, False)
+        status = self.avahi.publish_cname(cname, force=not EXTRA_PROBING)
         if not status:
             logger.error("Failed to publish '%s'", cname)
             return False
