@@ -24,7 +24,6 @@ import re
 import time
 import subprocess
 import signal
-#import Process
 import logging
 from urllib.error import URLError
 import docker # pylint: disable=import-error
