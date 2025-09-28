@@ -21,24 +21,30 @@ services:
       - ./avahi/avahi-daemon.conf:/etc/avahi/avahi-daemon.conf:ro
 
 # the rest of this file are test/debug services that start, wait a while, then die
-  test1:
+  infinity:
     image: alpine
-    command: "sleep 15"
+    command: "sleep infinity"
     profiles: ["debug"]
     depends_on: [docker-mdns-publisher]
-    labels: [mdns.publish=test1.mysubdomain.local]
+    labels: [mdns.publish=infinity.local]
 
   test2:
     image: alpine
-    command: "sleep 60"
-    profiles: ["debug"]
+    command: "sleep 15"
+    profiles: ["debug2"]
     depends_on: [docker-mdns-publisher]
-    labels: [mdns.publish=test2.local]
+    labels: [mdns.publish=test2.mysubdomain.local]
 
-  # the third container uses the same label as the second, to test error reporting
+  # the third and fourth container use the same label, to test error reporting
   test3:
     image: alpine
     command: "sleep 60"
-    profiles: ["debug"]
+    profiles: ["debug3"]
     depends_on: [docker-mdns-publisher]
-    labels: [mdns.publish=test2.local] # publish same label and expect error
+    labels: [mdns.publish=test3.local] # publish same label and expect error
+  test4:
+    image: alpine
+    command: "sleep 60"
+    profiles: ["debug3"]
+    depends_on: [docker-mdns-publisher]
+    labels: [mdns.publish=test3.local] # publish same label and expect error
