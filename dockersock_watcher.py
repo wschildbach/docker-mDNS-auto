@@ -58,7 +58,7 @@ def start_avahi():
     logger.info("avahi daemon starting...")
 
     proc = subprocess.run(["/sbin/avahi-daemon",
-                            "--file=/etc/avahi/avahi-daemon.conf","--daemonize","--debug"],
+                            "--file=/etc/avahi/avahi-daemon.conf","--daemonize"],
                             check=True)
 
     # loop until the avahi daemon is started.
