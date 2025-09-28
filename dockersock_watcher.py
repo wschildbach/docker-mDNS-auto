@@ -209,7 +209,7 @@ class LocalHostWatcher():
         for event in events:
             self.process_event(event)
 
-def handle_signals(signum):
+def handle_signals(signum, frame): # pylint: disable=unused-argument
     """ shut down avahi and dbus """
 
     signame = signal.Signals(signum).name
