@@ -5,7 +5,9 @@ services:
     read_only: true
     # make sure the mDNS ports are reachable
     network_mode: host
-    tmpfs: # provide a temp mount for the dbus socket, and for avahi
+   # provide a temp mount for the dbus socket, and for avahi. This is such that these
+   # systems can operate sockets despite the rest of the system being read-only
+    tmpfs:
       - /run/dbus
       - /run/avahi-daemon
     restart: on-failure:10
@@ -15,6 +17,7 @@ services:
     volumes:
       # map the docker socket to be able to monitor container lifecycles
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      # map the config file for the avahi daemon
       - ./avahi/avahi-daemon.conf:/etc/avahi/avahi-daemon.conf:ro
 
 # the rest of this file are test/debug services that start, wait a while, then die
