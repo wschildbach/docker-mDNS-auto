@@ -128,13 +128,13 @@ class LocalHostWatcher():
 
         return True  # Suppress exceptions
 
-    def publish(self,cname):
+    def publish(self,cname,container_name=None):
         """ publish the given cname using avahi """
-        logger.info("publishing %s",cname)
+        logger.info("publishing %s for %s",cname,container_name)
 
         status = self.avahi.publish_cname(cname, force=not EXTRA_PROBING)
         if not status:
-            logger.error("Failed to publish '%s'", cname)
+            logger.error("Failed to publish '%s' (container %s)", cname,container_name)
             return False
 
         return True
@@ -180,7 +180,7 @@ class LocalHostWatcher():
                 # if the cname looks valid, either register or deregister it
                 if action == 'start':
                     try:
-                        self.publish(cname)
+                        self.publish(cname,container.name)
                     except KeyError:
                         logger.warning("registering previously registered %s",cname)
                 elif action == 'die':
