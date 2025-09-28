@@ -45,4 +45,5 @@ COPY dbus/* /usr/share/dbus-1
 
 CMD ["/helper/bin/python3","/helper/dockersock_watcher.py"]
 # As a proxy for the healthcheck, test whether the avahi daemon is running
-HEALTHCHECK --interval=60s --start-period=10s  CMD [ "/sbin/avahi-daemon", "-c" ]
+# This only works if the daemon runs inside the container
+# HEALTHCHECK --interval=60s --start-period=10s  CMD [ "/sbin/avahi-daemon", "-c" ]
