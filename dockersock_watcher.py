@@ -29,19 +29,19 @@ from urllib.error import URLError
 import docker # pylint: disable=import-error
 from mpublisher import AvahiPublisher # pylint: disable=import-error
 
-PUBLISH_TTL = os.environ.get("TTL","120")
+RECORD_TTL = os.environ.get("RECORD_TTL","120")
 # These are the standard python log levels
-LOGGING_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
+LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 # get local domain from enviroment and escape all period characters
 LOCAL_DOMAIN = re.sub(r'\.','\\.',os.environ.get("LOCAL_DOMAIN",".local"))
 # the internal avahi daemon can be disabled
-DISABLE_AVAHI = os.environ.get("DISABLE_AVAHI","no") == "yes"
+DISABLE_AVAHI = os.environ.get("DISABLE_AVAHI","no").lower() in ("true","yes")
 # Set EXTRA_PROBING to check whether the name is already registered.
 # This is more robust but slower
 EXTRA_PROBING = os.environ.get("EXTRA_PROBING","yes").lower() in ("true","yes")
 
 logger = logging.getLogger("docker-mdns-publisher")
-logging.basicConfig(level=LOGGING_LEVEL)
+logging.basicConfig(level=LOG_LEVEL)
 
 def start_dbus():
     """ start the d-bus daemon.
@@ -87,7 +87,7 @@ class LocalHostWatcher():
     hostnamerule = re.compile(r'^\s*[\w\-\.]+\s*$')
     localrule = re.compile(r'.+'+LOCAL_DOMAIN)
 
-    def __init__(self,dockerclient,ttl=PUBLISH_TTL):
+    def __init__(self,dockerclient,ttl=RECORD_TTL):
         """set up AvahiPublisher and docker connection"""
         logger.debug("LocalHostWatcher.__init__()")
 

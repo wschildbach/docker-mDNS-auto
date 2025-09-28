@@ -57,10 +57,10 @@ docker-mdns-publisher-1  | INFO:docker-mdns-publisher:publishing test1.local
 
 The daemon is configured through environment variables.
 
-**TTL**
-> This sets the TTL for the mDNS publication, in seconds. The default is 120 seconds.
+**RECORD_TTL**
+> This sets the TTL for the mDNS records, in seconds. The default is 120 seconds.
 When other machines on the network resolve `.local` domain addresses through mdns,
-they can cache the result for up to TTL seconds, after which they have to do another
+they can cache the result for up to `RECORD_TTL` seconds, after which they have to do another
 mdns request. This also means that mdns mappings can persist for some time after the
 container has been stopped.
 
