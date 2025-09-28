@@ -17,28 +17,66 @@
    and registering/deregistering .local domain names when a label mdns.publish=host.local
    is present """
 
-__version__ = "0.10.5"
+__version__ = "1.0.0-rc2"
 
 import os
 import re
+import time
+import subprocess
+import signal
 import logging
 from urllib.error import URLError
 import docker # pylint: disable=import-error
+from mpublisher import AvahiPublisher # pylint: disable=import-error
 
-PUBLISH_TTL = os.environ.get("TTL","120")
-# You can switch off the use of avahi for debugging if your local system
-# does not have the avahi daemon running
-USE_AVAHI = os.environ.get("USE_AVAHI","yes") == "yes"
+RECORD_TTL = os.environ.get("RECORD_TTL","120")
 # These are the standard python log levels
-LOGGING_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
+LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 # get local domain from enviroment and escape all period characters
 LOCAL_DOMAIN = re.sub(r'\.','\\.',os.environ.get("LOCAL_DOMAIN",".local"))
+# the internal avahi daemon can be disabled
+DISABLE_AVAHI = os.environ.get("DISABLE_AVAHI","no").lower() in ("true","yes")
+# Set EXTRA_PROBING to check whether the name is already registered.
+# This is more robust but slower
+EXTRA_PROBING = os.environ.get("EXTRA_PROBING","yes").lower() in ("true","yes")
 
 logger = logging.getLogger("docker-mdns-publisher")
-logging.basicConfig(level=LOGGING_LEVEL)
+logging.basicConfig(level=LOG_LEVEL)
 
-if USE_AVAHI:
-    from mpublisher import AvahiPublisher # pylint: disable=import-error
+def start_dbus():
+    """ start the d-bus daemon.
+        This is needed for the communication with avahi """
+    logger.info("D-Bus daemon starting...")
+    proc = subprocess.run(["/usr/bin/dbus-daemon","--fork","--nopidfile","--nosyslog","--system"],
+                        check=True)
+    time.sleep(1)
+    logger.info("Success.")
+    return proc
+
+def start_avahi():
+    """ start and daemonize the avahi daemon """
+    logger.info("avahi daemon starting...")
+
+    proc = subprocess.run(["/sbin/avahi-daemon",
+                            "--file=/etc/avahi/avahi-daemon.conf","--daemonize"],
+                            check=True)
+
+    # loop until the avahi daemon is started.
+    logger.debug("waiting for avahi daemon to come up...")
+    while True:
+        time.sleep(1)
+        process = subprocess.run(["/sbin/avahi-daemon","-c"], check=False)
+        if process.returncode == 0:
+            break
+
+    logger.info("Success.")
+    return proc
+
+class ResourceError(Exception):
+    """Exception for when a resource is not available, such as a process"""
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
 
 class LocalHostWatcher():
     """watch the docker socket for starting and dieing containers.
@@ -49,37 +87,62 @@ class LocalHostWatcher():
     hostnamerule = re.compile(r'^\s*[\w\-\.]+\s*$')
     localrule = re.compile(r'.+'+LOCAL_DOMAIN)
 
-    def __init__(self,dockerclient,ttl=PUBLISH_TTL):
+    def __init__(self,dockerclient,ttl=RECORD_TTL):
         """set up AvahiPublisher and docker connection"""
         logger.debug("LocalHostWatcher.__init__()")
 
+        self.dockerclient = dockerclient
+        self.ttl = ttl
+        self.avahi = None
+
+    def __enter__(self):
         try:
-            self.dockerclient = dockerclient
-            if USE_AVAHI:
-                self.avahi = AvahiPublisher(record_ttl=ttl)
+            if not DISABLE_AVAHI:
+                start_dbus()
+                start_avahi()
+
+            self.avahi = AvahiPublisher(record_ttl=self.ttl)
+            if not self.avahi.available():
+                raise ResourceError("avahi daemon not available")
+
         except Exception as exception:
             # we don't really know which errors to expect here so we catch them all and re-throw
             logger.critical("%s",exception)
             raise exception
 
-    def __del__(self):
-        # this debug message is a bit of a misnomer. We cannot deregister
-        # hostnames, strictly speaking -- they will go out of existence after
-        # the TTL by themselves, once we kill the avahi publisher
-        logger.info("deregistering all registered hostnames")
-        del self.avahi # not strictly necessary but safe
+        return self
 
-    def publish(self,cname):
+    def __exit__(self, exc_type, exc_value, traceback):
+        # Handle exceptions (if any)
+        if exc_type:
+            logger.debug("A %s occurred: %s",exc_type,exc_value)
+
+        if self.avahi:
+            logger.info("deregistering all registered hostnames")
+
+            # this code is lifted from mpublisher
+            for group in self.avahi.published.values():
+                group.Reset()
+
+            self.avahi = None
+
+        return True  # Suppress exceptions
+
+    def publish(self,cname,container_name=None):
         """ publish the given cname using avahi """
-        logger.info("publishing %s",cname)
-        if USE_AVAHI:
-            self.avahi.publish_cname(cname, True)
+        logger.info("publishing %s for %s",cname,container_name)
+
+        status = self.avahi.publish_cname(cname, force=not EXTRA_PROBING)
+        if not status:
+            logger.error("Failed to publish '%s' (container %s)", cname,container_name)
+            return False
+
+        return True
 
     def unpublish(self,cname):
         """ unpublish the given cname using avahi """
         logger.info("unpublishing %s",cname)
-        if USE_AVAHI:
-            self.avahi.unpublish(cname)
+        self.avahi.unpublish(cname)
 
     def process_event(self,event):
         """when start/stop events are received, process the container that triggered the event """
@@ -117,7 +180,7 @@ class LocalHostWatcher():
                 # if the cname looks valid, either register or deregister it
                 if action == 'start':
                     try:
-                        self.publish(cname)
+                        self.publish(cname,container.name)
                     except KeyError:
                         logger.warning("registering previously registered %s",cname)
                 elif action == 'die':
@@ -145,11 +208,18 @@ class LocalHostWatcher():
         for event in events:
             self.process_event(event)
 
+def handle_signals(signum, frame): # pylint: disable=unused-argument
+    """ shut down avahi and dbus """
+
+    signame = signal.Signals(signum).name
+    logger.debug("Cleaning up on %s (%s)", signame, signum)
+
+    raise KeyboardInterrupt()
+
 if __name__ == '__main__':
+
     logger.info("docker-mdns-publisher daemon v%s starting.", __version__)
-
-    localWatcher = LocalHostWatcher(docker.from_env())
-    localWatcher.run() # this will never return
-
-    # we should never get here because run() loops indefinitely
-    assert False, "executing unreachable code"
+    with LocalHostWatcher(docker.from_env()) as localWatcher:
+        signal.signal(signal.SIGTERM, handle_signals)
+        signal.signal(signal.SIGINT,  handle_signals)
+        localWatcher.run() # this will never return

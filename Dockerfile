@@ -1,6 +1,6 @@
 FROM python:3-slim AS build-stage
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
           --mount=target=/var/cache/apt,type=cache,sharing=locked \
           rm -f /etc/apt/apt.conf.d/docker-clean && \
@@ -28,15 +28,22 @@ LABEL org.opencontainers.image.source=https://github.com/wschildbach/docker-mdns
 LABEL org.opencontainers.image.description="listens to docker socket and picks up host.local names from compose labels, publishing them with avahi"
 LABEL org.opencontainers.image.licenses=GPL-3.0-or-later
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
           --mount=target=/var/cache/apt,type=cache,sharing=locked \
           rm -f /etc/apt/apt.conf.d/docker-clean && \
           apt-get update && \
           apt-get --yes upgrade && \
-          apt-get --yes install libdbus-1-3
+          apt-get --yes install libdbus-1-3 avahi-daemon
 
 RUN mkdir /helper
 COPY --from=build-stage /helper /helper
 
-CMD /helper/bin/python3 /helper/dockersock_watcher.py
+# create the DBUS configuration
+RUN mkdir -p /run/dbus/containers /usr/share/dbus-1
+COPY dbus/* /usr/share/dbus-1
+
+CMD ["/helper/bin/python3","/helper/dockersock_watcher.py"]
+# As a proxy for the healthcheck, test whether the avahi daemon is running
+# This only works if the daemon runs inside the container
+# HEALTHCHECK --interval=60s --start-period=10s  CMD [ "/sbin/avahi-daemon", "-c" ]

@@ -1,27 +1,50 @@
 services:
   docker-mdns-publisher:
-    image: ghcr.io/wschildbach/docker-mdns-publisher:0.10
+    image: ghcr.io/wschildbach/docker-mdns-publisher:1.0
     build: .
     read_only: true
+    # make sure the mDNS ports are reachable
+    network_mode: host
+   # provide a temp mount for the dbus socket, and for avahi. This is such that these
+   # systems can operate sockets despite the rest of the system being read-only
+    tmpfs:
+      - /run/dbus
+      - /run/avahi-daemon
     restart: on-failure:10
-    privileged: true
     environment:
       - LOG_LEVEL=INFO # INFO is the default
+      - PYTHONUNBUFFERED=1
     volumes:
+      # map the docker socket to be able to monitor container lifecycles
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket:ro
+      # map the config file for the avahi daemon
+      - ./avahi/avahi-daemon.conf:/etc/avahi/avahi-daemon.conf:ro
 
 # the rest of this file are test/debug services that start, wait a while, then die
-  test1:
+  infinity:
     image: alpine
-    command: "sleep 15"
+    command: "sleep infinity"
     profiles: ["debug"]
     depends_on: [docker-mdns-publisher]
-    labels: [mdns.publish=test1.local]
+    labels: [mdns.publish=infinity.local]
 
   test2:
     image: alpine
-    command: "sleep 60"
-    profiles: ["debug"]
+    command: "sleep 15"
+    profiles: ["debug2"]
     depends_on: [docker-mdns-publisher]
-    labels: [mdns.publish=test2.local]
+    labels: [mdns.publish=test2.mysubdomain.local]
+
+  # the third and fourth container use the same label, to test error reporting
+  test3:
+    image: alpine
+    command: "sleep 60"
+    profiles: ["debug3"]
+    depends_on: [docker-mdns-publisher]
+    labels: [mdns.publish=test3.local] # publish same label and expect error
+  test4:
+    image: alpine
+    command: "sleep 60"
+    profiles: ["debug3"]
+    depends_on: [docker-mdns-publisher]
+    labels: [mdns.publish=test3.local] # publish same label and expect error
